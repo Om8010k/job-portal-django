@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>My Applications</title>
+
+    <!-- ✅ FAVICON -->
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/25/25694.png">
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100">
+
+    <!-- NAVBAR -->
+    <nav class="bg-white shadow p-4 flex justify-between items-center">
+        <h1 class="text-xl font-bold text-blue-600">ExecutiveWorkspace</h1>
+
+        <div class="space-x-4">
+            <a href="/jobs/" class="font-bold hover:text-blue-600">Jobs</a>
+            <a href="/applications/" class="font-bold text-blue-600">My Applications</a>
+            <button onclick="logout()" class="text-red-500 font-semibold">Logout</button>
+        </div>
+    </nav>
+
+    <!-- HEADER -->
+    <div class="text-center py-10">
+        <h2 class="text-3xl font-bold text-blue-600">My Applications 📄</h2>
+        <p class="text-gray-500">Track all your applied jobs</p>
+    </div>
+
+    <!-- APPLICATION LIST -->
+    <div id="applications" class="max-w-4xl mx-auto space-y-4 px-4">
+        <div class="text-center text-gray-500">Loading applications...</div>
+    </div>
+
+    <script>
+        async function loadApplications() {
+            const container = document.getElementById("applications");
+            const token = localStorage.getItem("access");
+
+            // 🔐 CHECK LOGIN
+            if (!token) {
+                window.location.href = "/auth/";
+                return;
+            }
+
+            try {
+                const res = await fetch("/api/jobs/my-applications/", {
+                    headers: {
+                        "Authorization": "Bearer " + token
+                    }
+                });
+
+                // 🔐 SESSION EXPIRED
+                if (res.status === 401) {
+                    localStorage.clear();
+                    window.location.href = "/auth/";
+                    return;
+                }
+
+                const data = await res.json();
+                const apps = data.results || data;
+
+                container.innerHTML = "";
+
+                // ❌ EMPTY STATE
+                if (!apps.length) {
+                    container.innerHTML = `
+                        <div class="bg-white p-6 rounded-xl shadow text-center">
+                            <p class="text-gray-500 text-lg">😢 No applications yet</p>
+                            <a href="/jobs/" 
+                                class="mt-4 inline-block bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                                Browse Jobs
+                            </a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // ✅ SHOW APPLICATIONS
+                apps.forEach(app => {
+
+                    const statusColor =
+                        app.status === "shortlisted" ? "bg-green-100 text-green-600" :
+                            app.status === "rejected" ? "bg-red-100 text-red-600" :
+                                "bg-yellow-100 text-yellow-600";
+
+                    container.innerHTML += `
+                        <div class="bg-white p-5 rounded-xl shadow hover:shadow-md transition">
+
+                            <h3 class="text-lg font-bold">
+                                ${app.job_title || "Job"}
+                            </h3>
+
+                            <p class="text-gray-500">
+                                ${app.company_name || "Company"}
+                            </p>
+
+                            <p class="text-sm text-gray-400 mt-1">
+                                Applied on: ${new Date(app.applied_at).toLocaleDateString()}
+                            </p>
+
+                            <div class="flex justify-between items-center mt-3">
+
+                                <span class="text-sm px-3 py-1 rounded ${statusColor}">
+                                    ${app.status}
+                                </span>
+
+                                <button onclick="viewJob(${app.job})"
+                                    class="bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded">
+                                    View Job
+                                </button>
+
+                            </div>
+
+                        </div>
+                    `;
+                });
+
+            } catch (error) {
+                console.error(error);
+
+                container.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 p-5 rounded-xl text-center">
+                        <p class="text-red-600 font-semibold text-lg">
+                            ⚠️ Unable to load applications
+                        </p>
+
+                        <button onclick="loadApplications()" 
+                            class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                            Retry
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // ✅ FIXED FUNCTION (IMPORTANT)
+        function viewJob(id) {
+            window.location.href = `/jobs/${id}/`;
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = "/auth/";
+        }
+
+        // 🚀 LOAD DATA
+        loadApplications();
+    </script>
+
+</body>
+
+</html>

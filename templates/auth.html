@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Auth</title>
+
+    <!-- ✅ FAVICON -->
+    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/25/25694.png">
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 flex items-center justify-center h-screen">
+
+    <div class="bg-white p-6 rounded shadow w-80">
+
+        <!-- LOGIN -->
+        <h2 class="text-xl font-bold text-center mb-4">Login</h2>
+
+        <input id="loginEmail" placeholder="Username" class="w-full border p-2 mb-3 rounded">
+        <input id="loginPassword" type="password" placeholder="Password" class="w-full border p-2 mb-3 rounded">
+
+        <button onclick="login()" class="w-full bg-blue-700 text-white p-2 rounded">
+            Login
+        </button>
+
+        <hr class="my-4">
+
+        <!-- REGISTER -->
+        <h2 class="text-xl font-bold text-center mb-4">Register</h2>
+
+        <input id="regEmail" placeholder="Username" class="w-full border p-2 mb-3 rounded">
+        <input id="regPassword" type="password" placeholder="Password" class="w-full border p-2 mb-3 rounded">
+
+        <select id="role" class="w-full border p-2 mb-3 rounded">
+            <option value="candidate">Candidate</option>
+            <option value="employer">Employer</option>
+        </select>
+
+        <button onclick="register()" class="w-full bg-green-600 text-white p-2 rounded">
+            Register
+        </button>
+
+    </div>
+
+    <script>
+        // CLEAR LOGIN FIELDS
+        window.onload = function () {
+            document.getElementById("loginEmail").value = "";
+            document.getElementById("loginPassword").value = "";
+        };
+
+        // ================= REGISTER =================
+        async function register() {
+            const username = document.getElementById("regEmail").value;
+            const password = document.getElementById("regPassword").value;
+            const role = document.getElementById("role").value;
+
+            try {
+                const res = await fetch("/api/accounts/register/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        username,
+                        password,
+                        password2: password,
+                        role
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    alert("Registered Successfully ✅");
+
+                    // CLEAR FORM
+                    document.getElementById("regEmail").value = "";
+                    document.getElementById("regPassword").value = "";
+                    document.getElementById("role").value = "candidate";
+
+                } else {
+                    console.log("REGISTER ERROR:", data);
+
+                    // 🔥 SHOW REAL ERROR
+                    alert(
+                        data.detail ||
+                        (data.username ? data.username[0] : "") ||
+                        (data.password ? data.password[0] : "") ||
+                        JSON.stringify(data)
+                    );
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert("Server error ❌");
+            }
+        }
+
+        // ================= LOGIN =================
+        async function login() {
+            const username = document.getElementById("loginEmail").value;
+            const password = document.getElementById("loginPassword").value;
+
+            try {
+                const res = await fetch("/api/accounts/login/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        username,
+                        password
+                    })
+                });
+
+                const data = await res.json();
+
+                console.log("LOGIN RESPONSE:", data);
+
+                if (res.ok && data.access) {
+
+                    localStorage.setItem("access", data.access);
+                    localStorage.setItem("refresh", data.refresh);
+                    localStorage.setItem("role", data.role);
+
+                    if (data.role === "employer") {
+                        window.location.href = "/dashboard/";
+                    } else {
+                        window.location.href = "/jobs/";
+                    }
+
+                } else {
+                    alert(data.detail || "Invalid credentials ❌");
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert("Server error ❌");
+            }
+        }
+    </script>
+
+</body>
+
+</html>

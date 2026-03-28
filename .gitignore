@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+jobenv/
+db.sqlite3
+.env
+media/
+resumes/
+staticfiles/
+.vscode/

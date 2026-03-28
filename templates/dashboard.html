@@ -1,0 +1,88 @@
+<script>
+    const token = localStorage.getItem("access");
+    const role = localStorage.getItem("role");
+
+    // 🔐 AUTH CHECK
+    if (!token || role !== "employer") {
+        alert("Access denied ❌");
+        window.location.href = "/auth/";
+    }
+
+    // 🔓 LOGOUT
+    function logout() {
+        localStorage.clear();
+        window.location.href = "/auth/";
+    }
+
+    // 📥 LOAD JOBS
+    async function loadJobs() {
+        const container = document.getElementById("jobsContainer");
+        container.innerHTML = "Loading jobs...";
+
+        try {
+            const res = await fetch("/api/jobs/");
+            const data = await res.json();
+
+            const jobs = data.results || data;
+            container.innerHTML = "";
+
+            // ✅ EMPTY STATE
+            if (!jobs.length) {
+                container.innerHTML = `<p class="text-gray-500 text-center">No jobs posted yet</p>`;
+                return;
+            }
+
+            // ✅ RENDER JOBS
+            jobs.forEach(job => {
+                container.innerHTML += `
+                    <div class="bg-white p-4 rounded shadow">
+                        <h3 class="font-bold text-lg">${job.title}</h3>
+                        <p class="text-gray-500">${job.company_name}</p>
+                        <p class="text-sm text-gray-400">${job.location}</p>
+                    </div>
+                `;
+            });
+
+        } catch (error) {
+            console.error(error);
+            container.innerHTML = `<p class="text-red-500">Error loading jobs ❌</p>`;
+        }
+    }
+
+    // 📤 POST JOB
+    async function postJob() {
+        const res = await fetch("/api/jobs/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token
+            },
+            body: JSON.stringify({
+                title: document.getElementById("title").value,
+                company_name: document.getElementById("company_name").value,
+                description: document.getElementById("description").value,
+                location: document.getElementById("location").value,
+                salary: document.getElementById("salary").value,
+                job_type: document.getElementById("job_type").value
+            })
+        });
+
+        if (res.ok) {
+            alert("Job Posted ✅");
+
+            // 🔄 CLEAR FORM
+            document.getElementById("title").value = "";
+            document.getElementById("company_name").value = "";
+            document.getElementById("location").value = "";
+            document.getElementById("salary").value = "";
+            document.getElementById("description").value = "";
+
+            loadJobs();
+        } else {
+            alert("Failed to post job ❌");
+        }
+    }
+
+    // 🚀 INITIAL LOAD
+    loadJobs();
+</script>
